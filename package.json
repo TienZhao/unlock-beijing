@@ -1,0 +1,16 @@
+{
+  "name": "unlock-beijing",
+  "version": "1.0.0",
+  "description": "献给将要和我一起走过这座城市的人",
+  "main": "geocoder.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "request": "^2.88.2",
+    "requests": "^0.3.0"
+  }
+}

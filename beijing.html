@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>和鹅一起，解锁北京</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <style>
+        html,
+        body,
+        #container {
+            height: 100%;
+            width: 100%;
+        }
+        #result{
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            width: 350px;
+            height: auto;
+            /*line-height: 30px;*/
+            text-align: left;
+            background: transparent;
+            border-radius: 7px;
+            z-index: 99;
+            /*background-color: white;*/
+            font-size: small;
+        }
+        #result ul{
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+        #result ul li{
+            color: #000000;
+            padding: 7px;
+            font-size: 14px;
+            text-align: justify;
+            border-bottom: 1px solid #D3D3D3
+        }
+        #result>div:last-child{
+            display: flex;
+            align-items: center;
+        }
+        .marker {
+            position: absolute;
+            top: 3px;
+            left: 30px;
+            color: #000000;
+            padding: 4px 10px;
+            box-shadow: 1px 1px 1px rgba(10, 10, 10, .2);
+            white-space: nowrap;
+            font-size: 12px;
+            font-family: "";
+            background-color: white;
+            border-radius: 3px;
+        }
+        .amap-marker-label {
+            border:#BBBBBB 1px solid;
+        }
+        #noticeDiv{
+            margin-top: 10px;
+            width: 260px;
+            height: auto;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .noticeText{ 
+            margin: 0px;
+            width: 100%;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            background: #FFFFFF;  
+            opacity: 0.8;  
+            text-align: left; 
+            color: #000000;   
+            font-size: 12px; 
+            line-height: 20px;         
+        }
+        #donateDiv{
+            margin-top: 10px;
+            width: 240px;
+            height: 550px;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        #buttonRow{
+            width: 100%;
+            background: transparent;
+            display: flex;
+            flex-direction: row;
+        }
+        .donateText{
+            margin: 0px;
+            width: 100%;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            background: #FFD700;    
+            text-align: center;   
+            line-height: 20px;
+            font-size: 16px;
+            color: #000000;     
+        }
+        .btn{
+            width: 80px;
+            height: 35px;
+            color: #000000;
+            border-color: #BBBBBB;
+            font-size: 14px;
+            border-width: 0.5px;
+            border-radius: 5px;
+            background: #FFD700;
+            box-shadow: none;
+            white-space: nowrap;
+            overflow: hidden
+        }
+        .btn:hover{
+            cursor: pointer;
+        }
+        .subbtn{
+            margin-left: 10px;
+            width: 60px;
+            height: 35px;
+            color: #000000;
+            border-color: #BBBBBB;
+            font-size: 14px;
+            border-width: 0.5px;
+            border-radius: 5px;
+            background: #EEEEEE;
+            box-shadow: none;
+            white-space: nowrap;
+            overflow: hidden
+        }
+    </style>
+</head>
+<body>
+    <div id='container'></div>
+    <div id='result' width='100%'>
+        <div id='buttonRow'>
+            <button onclick='geoCode()' class='btn'>去哪</button>
+            <button onclick='btnDonate()' class='subbtn'>支持</button>
+            <button onclick='btnShare()' class='subbtn'>分享</button>
+        </div>
+        <div id='noticeDiv'>
+            <div class="noticeText">
+                <span>心里像有一些话，我们先不讲</span>
+                <span>等待着那将要盛装出场的未来</span>
+                <span>——《清白之年》</span>
+            </div>            
+        </div>
+        <div id='donateDiv' style="display: none;">
+            <div class='donateText'> 
+                <span><b>打赏十块</b></span>
+                <span><b>给作者投喂小鱼！</b></span>
+                <!-- <span><b>Donate ￥10</b></span>
+                <span><b>Power our server!</b></span> -->
+            </div>
+            <img src="https://tienzhao.github.io/covid-shanghai/images/donation2.jpg" width="240"/>
+            <div class='donateText'>                
+                <span><b>I ❤️ Beijing</b></span>
+            </div>
+        </div>
+    </div>
+    <!-- 流量统计 -->
+    <!-- <script async src="https://static.getclicky.com/101358038.js"></script>
+    <noscript><img alt="Clicky" width="1" height="1" src="https://in.getclicky.com/101358038ns.gif" /></noscript> -->
+    
+    <!-- 高德凭据 -->
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {securityJsCode:'9ebdc050140bdcfa4b2667a7d30cd0e5'}
+    </script>
+    <script type="text/javascript"
+        src="https://webapi.amap.com/maps?v=1.4.15&key=3c7d273d58c66c01fb9549449af5684e&plugin=AMap.Geocoder">
+    </script>
+
+    <!-- 另一些数据 -->
+    <script type="text/javascript" src='pois.js'></script>
+
+    <script type="text/javascript">
+        
+        // 前端组件
+        // “支持”按钮控制“通知”框
+        function btnDonate(){
+            let noticeDiv = document.getElementById('noticeDiv');
+            let donateDiv = document.getElementById('donateDiv');
+            noticeDiv.style["display"] = noticeDiv.style["display"] == 'none'? 'flex' : 'none';
+            donateDiv.style["display"] = noticeDiv.style["display"] == 'none'? 'flex' : 'none';
+        }
+
+        function btnShare(){
+            let transfer = document.createElement('input');
+            document.body.appendChild(transfer);
+            transfer.value = "解锁北京\nhttps://tienzhao.github.io/unlock-beijing/beijing.html?from=share";
+            transfer.focus();
+            transfer.select();
+            if (document.execCommand('copy')) {
+                document.execCommand('copy');
+                alert("复制成功，赶紧发给好友吧！");
+            }
+            transfer.blur();
+            document.body.removeChild(transfer);
+        }
+
+        // 地图
+        // 地图初始化位置
+        var map = new AMap.Map("container", {
+            resizeEnable: true,
+            center: [116.4, 39.94],
+            zoom: 14
+        });
+        map.on('zoomend', mapZoomend);
+        var zoom = map.getZoom();
+
+        // 定位控件
+        AMap.plugin('AMap.Geolocation', function() {
+            var geolocation = new AMap.Geolocation({
+                enableHighAccuracy: true,               //使用高精度定位
+                buttonPosition:'LT',                    //定位按钮的停靠位置
+                buttonOffset: new AMap.Pixel(240, 10),  //定位按钮与设置的停靠位置的偏移量
+                zoomToAccuracy: true,                   //定位成功后是否自动调整地图视野到定位点
+            });
+            map.addControl(geolocation);        
+        });
+
+        var markers = [];
+        var marked = false;
+        var positionData = {};
+        var addressAllow = true;
+        var addressOnDisplay = false;
+
+        function geoCode() {
+            if (!marked){
+                marked = true
+                map.remove(markers);
+                markers = [];
+
+                // 使用海量点在地图上做标记
+                var style = [{
+                    url: 'images/tropical-drink_1f379.png',
+                    anchor: new AMap.Pixel(9, 9),
+                    size: new AMap.Size(17, 17)
+                }, {
+                    url: 'images/framed-picture_1f5bc-fe0f.png',
+                    anchor: new AMap.Pixel(9, 9),
+                    size: new AMap.Size(17, 17)
+                }, {
+                    url: 'images/hot-beverage_2615.png',
+                    anchor: new AMap.Pixel(9, 9),
+                    size: new AMap.Size(17, 17)
+                }, {
+                    url: 'images/custard_1f36e.png',
+                    anchor: new AMap.Pixel(9, 9),
+                    size: new AMap.Size(17, 17)
+                }, {
+                    url: 'images/pot-of-food_1f372.png',
+                    anchor: new AMap.Pixel(9, 9),
+                    size: new AMap.Size(17, 17)
+                }, {
+                    url: 'images/sushi_1f363.png',
+                    anchor: new AMap.Pixel(9, 9),
+                    size: new AMap.Size(17, 17)
+                }, {
+                    url: 'images/ice-skate_26f8-fe0f.png',
+                    anchor: new AMap.Pixel(9, 9),
+                    size: new AMap.Size(17, 17)
+                }, {
+                    url: 'images/books_1f4da.png',
+                    anchor: new AMap.Pixel(9, 9),
+                    size: new AMap.Size(17, 17)
+                }];
+
+                var massData = pois
+                var mass = new AMap.MassMarks(massData, {
+                    opacity: 1,
+                    zIndex: 111,
+                    cursor: 'pointer',
+                    style: style
+                });
+
+                var marker = new AMap.Marker({content: ' ', map: map});
+
+                mass.on('mouseover', function (e) {
+                    marker.setPosition(e.data.lnglat);
+                    marker.setLabel({content: e.data.name})
+                });
+
+                mass.on('touchstart', function (e) {
+                    marker.setPosition(e.data.lnglat);
+                    marker.setLabel({content: e.data.name})
+                });
+
+                mass.setMap(map);
+
+                drawBounds()
+            }            
+        }
+
+        // 监听鼠标滚轮结束事件，视野范围太大（zoom < 16时），隐藏文本标记
+        function mapZoomend(){
+            zoom = map.getZoom()
+            let markerElements = document.getElementsByClassName("marker");
+            if (zoom < 16 && !addressAllow){
+                if (addressOnDisplay){
+                    addressOnDisplay = false; 
+                    for(let m = 0; m < markerElements.length; m++) {
+                        markerElements[m].style["display"] = "none";
+                    }
+                }
+            } else if (zoom >= 16 && addressAllow) {
+                if (!addressOnDisplay){
+                    addressOnDisplay = true; 
+                    for(let m = 0; m < markerElements.length; m++) {
+                        markerElements[m].style["display"] = "block";
+                    }
+                }                
+            }
+        }
+
+        // 地址框
+        function btnAddress(){
+            let markerElements = document.getElementsByClassName("marker");
+            if (addressOnDisplay){
+                addressOnDisplay = false; 
+                addressAllow = false;
+                for(let m = 0; m < markerElements.length; m++) {
+                    markerElements[m].style["display"] = "none";
+                }
+            } else {
+                addressOnDisplay = true; 
+                addressAllow = true;
+                for(let m = 0; m < markerElements.length; m++) {
+                    markerElements[m].style["display"] = "block";
+                }
+            }
+        }
+
+
+        // 安全
+        // 为了接口安全，避免API滥用，做一些处理；参考：https://www.cnblogs.com/moluy/p/14085173.html
+        function destroyMap() {
+            console.log('为了避免API滥用，本网页禁止控制台调试。\n你也会开发？一起来玩耍！\nhttps://github.com/TienZhao/unlock-beijing/')
+            map && map.destroy();
+            AMap = null;
+        }
+        //禁止F12键盘事件
+        document.addEventListener('keydown', function(event){
+           return 123 != event.keyCode || (event.returnValue = false)
+        });
+        //禁止右键、选择、复制
+        document.addEventListener('contextmenu', function(event){
+           return event.returnValue = false
+        })
+        //检测控制台高度变化
+        function resize(){
+            var threshold = 200;
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if(widthThreshold || heightThreshold){
+                destroyMap();
+            }
+        }
+        window.addEventListener('resize', resize);
+        resize()
+        //监听toString方法和dom属性
+        var observerConsole = {
+            openCallback: function(){
+                destroyMap();
+                try {
+                    window.open("about:blank", "_self")
+                } catch(e) {
+                    var btn = document.createElement("button");
+                    btn.onclick = function() {
+                        window.open("about:blank", "_self")
+                    }
+                    btn.click()
+                }
+            },
+            observer: function(){
+                //这里使用dom元素，在打开控制台时才会计算id
+                var dom = document.createElement("div"), that = this;
+                Object.defineProperty(dom, "id", {
+                    get: function(){
+                        that.openCallback()
+                    }
+                })
+                //ie不支持console.table
+                //console.info(dom);
+                console.log(dom);
+            },
+            observerF: function(){
+                var obj = Object.create(null), t = Date.now(), that = this;
+                Object.defineProperty(obj, "a", {
+                    get: function() {
+                        if(Date.now() - t > 100){
+                            that.openCallback()
+                        }
+                    }
+                })
+                setInterval(function(){
+                    t = Date.now();
+                    (function(){})["constructor"]("debugger")();//debugger;
+                    console.log(obj.a);
+                }, 200)
+            },
+            init: function(){
+                var t = window.navigator.userAgent.toLowerCase();
+                t.indexOf("firefox") >= 0 ? this.observerF() : this.observer();
+            }
+        }
+        observerConsole.init();
+    </script>
+</body>
+</html>
+
